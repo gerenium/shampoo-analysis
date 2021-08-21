@@ -1,0 +1,57 @@
+import csv
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Read input file
+df = pd.read_csv('shampoo_sales.csv')
+sales = df[['Sales']]
+sales.plot(figsize=(12,10), linewidth=5, fontsize=20) #20,10
+plt.xlabel('Month', fontsize=20)
+plt.ylabel('Sales per month', fontsize=20)
+plt.show()
+
+# Task 1
+sales.rolling(6).mean().plot(figsize=(12,10), linewidth=5, fontsize=20)
+plt.xlabel('Month', fontsize=20)
+plt.show()
+sales.diff().plot(figsize=(12,10), linewidth=5, fontsize=20)
+plt.xlabel('Month', fontsize=20)
+plt.show()
+# Task 2: for first 10-12 lags - positive correlation, after - negative
+pd.plotting.autocorrelation_plot(sales)
+plt.show()
+
+''' Комментарии: восходящий (upward) тренд, можно наблюдать пики в конце каждого года '''
+
+# Task 2:
+pd.plotting.autocorrelation_plot(sales)
+plt.show()
+
+''' Комментарии: для первых 10-12 лагов - позитивная корреляция, а дальше - негативная '''
+
+from statsmodels.tsa.arima.model import ARIMA
+from sklearn.metrics import mean_squared_error
+from math import sqrt
+size = int(len(sales) * 0.65)
+train_set, test_set = sales.values[0:size], sales.values[size:len(sales)]
+history = [x for x in train_set]
+predictions = list()
+# walk-forward валидация
+for t in range(len(test_set)):
+    model = ARIMA(history, order=(5,1,0))
+    model_fit = model.fit()
+    output = model_fit.forecast()
+    predictions.append(output[0])
+    history.append(test_set[t])
+    print('predicted=%f, expected=%f' % (output[0], test_set[t]))
+# оценка прогнозов
+rmse = sqrt(mean_squared_error(test_set, predictions))
+print('test RMSE: %.3f' % rmse)
+# строим график прогноз vs. актуальные значения
+plt.plot(test_set, label='true')
+plt.plot(predictions, color='red', label='predicted')
+plt.xlabel('Month')
+plt.ylabel('Sales per month')
+plt.legend()
+plt.show()
